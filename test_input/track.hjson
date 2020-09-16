@@ -1,0 +1,17 @@
+[
+  {
+    field_1a: field_1a_value
+    field_1b: field_1b_value
+    field_1c: field_1c_value
+  }
+  {
+    field_2a: field_2a_value
+    field_2b: field_2b_value
+    field_2c: field_2c_value
+  }
+  {
+    field_3a: field_3a_value
+    field_3b: field_3b_value
+    field_3c: field_3c_value
+  }
+]
