@@ -3,6 +3,7 @@ import pathlib as pl
 import argparse
 
 import mutagen
+import hjson
 
 Block = tp.Mapping[str, tp.Sequence[str]]
 
@@ -26,12 +27,12 @@ def get_arg_parser():
     parser.add_argument(
         'album_file',
         type=pl.Path,
-        help='Path to file defining album-level fields',
+        help='Path to HJSON file defining album-level fields',
     )
     parser.add_argument(
         'track_file',
         type=pl.Path,
-        help='Path to file defining track-level fields',
+        help='Path to HJSON file defining track-level fields',
     )
 
     return parser
@@ -45,5 +46,16 @@ if __name__ == '__main__':
     album_file = args.album_file
     track_file = args.track_file
 
-    for flac_file in sorted(source_dir.glob('*.flac')):
+    with album_file.open() as fp:
+        album_fields = hjson.load(fp)
+
+    with track_file.open() as fp:
+        track_field_blocks = hjson.load(fp)
+
+    flac_files = sorted(source_dir.glob('*.flac'))
+
+    # Check that there are equal numbers of track blocks and FLAC files.
+    assert(len(track_field_blocks) == len(flac_files))
+
+    for flac_file in flac_files:
         print(flac_file)
