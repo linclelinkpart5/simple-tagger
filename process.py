@@ -19,22 +19,31 @@ class Processor:
 def get_arg_parser():
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument(
-        'music_dir',
-        metavar='SOURCE DIR',
+        'source_dir',
         type=pl.Path,
-        help='The input directory to read FLAC files from',
+        help='Input dir path to read FLAC files from',
     )
     parser.add_argument(
-        '--album-file',
+        'album_file',
         type=pl.Path,
-        help='File defining album-level fields',
+        help='Path to file defining album-level fields',
     )
     parser.add_argument(
-        '--track-file',
+        'track_file',
         type=pl.Path,
-        help='File defining track-level fields',
+        help='Path to file defining track-level fields',
     )
 
+    return parser
+
+
+if __name__ == '__main__':
+    parser = get_arg_parser()
     args = parser.parse_args()
 
-    return args
+    source_dir = args.source_dir
+    album_file = args.album_file
+    track_file = args.track_file
+
+    for flac_file in sorted(source_dir.glob('*.flac')):
+        print(flac_file)
