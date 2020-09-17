@@ -56,19 +56,10 @@ if __name__ == '__main__':
     album_file = args.album_file
     track_file = args.track_file
 
-    with album_file.open() as fp:
-        album_fields = hjson.load(fp)
-
-    with track_file.open() as fp:
-        track_field_blocks = hjson.load(fp)
-
     src_paths = list(source_dir.glob('*.flac'))
 
-    # Check that there are equal numbers of track blocks and FLAC files.
-    assert(len(track_field_blocks) == len(src_paths))
-
     entries = []
-    expected_track_nums = set(i + 1 for i in range(len(track_field_blocks)))
+    expected_track_nums = set(i + 1 for i in range(len(src_paths)))
 
     for src_path in src_paths:
         with src_path.open(mode='rb') as fp:
@@ -92,5 +83,23 @@ if __name__ == '__main__':
 
     entries.sort(key=sort_key)
 
+    # Output intermediate data and pause for user input.
+    # We care about artist and title info.
+    intermediates = []
     for entry in entries:
-        print(entry)
+        sub_tags = {k: entry.tags[k] for k in ('ARTIST', 'TITLE')}
+        intermediates.append(sub_tags)
+
+    print(hjson.dumps(intermediates))
+
+    input("Press Enter to continue...")
+
+    # Now actually load the album and track
+    with album_file.open() as fp:
+        album_fields = hjson.load(fp)
+
+    with track_file.open() as fp:
+        track_field_blocks = hjson.load(fp)
+
+    # Check that there are equal numbers of track blocks and FLAC files.
+    assert(len(track_field_blocks) == len(entries))
