@@ -30,6 +30,11 @@ def get_arg_parser():
         help='Input dir path to read FLAC files from',
     )
     parser.add_argument(
+        'output_dir',
+        type=pl.Path,
+        help='Output dir path to write modified FLAC files to',
+    )
+    parser.add_argument(
         'album_file',
         type=pl.Path,
         help='Path to HJSON file defining album-level fields',
