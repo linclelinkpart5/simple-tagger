@@ -34,6 +34,12 @@ def get_arg_parser():
         type=pl.Path,
         help='Path to HJSON file defining track-level fields',
     )
+    parser.add_argument(
+        '--no-check-count',
+        action='store_true',
+        default=False,
+        help='Skip the check for equal numbers of input files and track blocks',
+    )
 
     return parser
 
@@ -55,7 +61,8 @@ if __name__ == '__main__':
     flac_paths = sorted(source_dir.glob('*.flac'))
 
     # Check that there are equal numbers of track blocks and FLAC files.
-    assert(len(track_field_blocks) == len(flac_paths))
+    if not args.no_check_count:
+        assert(len(track_field_blocks) == len(flac_paths))
 
     for flac_path in flac_paths:
         print(flac_path)
