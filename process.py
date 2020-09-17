@@ -40,7 +40,7 @@ def get_arg_parser():
 
     return parser
 
-def collect_entries(source_dir: pl.Path):
+def collect_entries(source_dir: pl.Path) -> tp.List[Entry]:
     src_paths = list(source_dir.glob('*.flac'))
 
     entries = []
@@ -70,7 +70,7 @@ def collect_entries(source_dir: pl.Path):
 def normalize_block_candidate(block_candidate) -> Block:
     # Ensure that we have a mapping.
     if not isinstance(block_candidate, dict):
-        raise InvalidBlock('not a mapping')
+        raise InvalidBlock('block is not a dict')
 
     for k in block_candidate.keys():
         # The mapping should have string keys only.
