@@ -7,20 +7,13 @@ import hjson
 
 Block = tp.Mapping[str, tp.Sequence[str]]
 
+class InvalidBlock(Exception):
+    pass
+
 class Entry(tp.NamedTuple):
     path: pl.Path
     track_num: int
     tags: tp.Mapping[str, tp.List[str]]
-
-class Processor:
-    @staticmethod
-    def process(
-        dir: pl.Path,
-        album_fields: Block,
-        track_fields: tp.Iterable[Block],
-    ):
-        pass
-
 
 def get_arg_parser():
     parser = argparse.ArgumentParser(description='Process some integers.')
@@ -46,7 +39,6 @@ def get_arg_parser():
     )
 
     return parser
-
 
 def collect_entries(source_dir: pl.Path):
     src_paths = list(source_dir.glob('*.flac'))
@@ -75,6 +67,30 @@ def collect_entries(source_dir: pl.Path):
 
     return entries
 
+def normalize_block_candidate(block_candidate) -> Block:
+    # Ensure that we have a mapping.
+    if not isinstance(block_candidate, dict):
+        raise InvalidBlock('not a mapping')
+
+    for k in block_candidate.keys():
+        # The mapping should have string keys only.
+        if not isinstance(k, str):
+            raise InvalidBlock('block does not have strings as keys')
+
+        # Each value in the mapping should be either a string or a list of strings.
+        v = block_candidate[k]
+        if isinstance(v, str):
+            # Convert into a singleton list of strings.
+            block_candidate[k] = [v]
+        elif isinstance(v, list):
+            # Ensure each element in the list is a string.
+            for sv in v:
+                if not isinstance(sv, str):
+                    raise InvalidBlock('block contains a non-string list as a value')
+        else:
+            raise InvalidBlock('block does not have strings or lists of strings as values')
+
+    return block_candidate
 
 if __name__ == '__main__':
     parser = get_arg_parser()
@@ -96,10 +112,6 @@ if __name__ == '__main__':
     print(hjson.dumps(intermediates))
 
     input("Press Enter to continue...")
-
-    # Now actually load the album and track data.
-    with album_file.open() as fp:
-        album_fields = hjson.load(fp)
 
     with track_file.open() as fp:
         track_field_blocks = hjson.load(fp)
