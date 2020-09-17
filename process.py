@@ -2,7 +2,7 @@ import typing as tp
 import pathlib as pl
 import argparse
 
-import mutagen
+import mutagen.flac
 import hjson
 
 Block = tp.Mapping[str, tp.Sequence[str]]
@@ -52,10 +52,14 @@ if __name__ == '__main__':
     with track_file.open() as fp:
         track_field_blocks = hjson.load(fp)
 
-    flac_files = sorted(source_dir.glob('*.flac'))
+    flac_paths = sorted(source_dir.glob('*.flac'))
 
     # Check that there are equal numbers of track blocks and FLAC files.
-    assert(len(track_field_blocks) == len(flac_files))
+    assert(len(track_field_blocks) == len(flac_paths))
 
-    for flac_file in flac_files:
-        print(flac_file)
+    for flac_path in flac_paths:
+        print(flac_path)
+        with flac_path.open(mode='rb') as fp:
+            flac_data = mutagen.flac.FLAC(fp)
+            tags = flac_data.tags
+            print(tags)
