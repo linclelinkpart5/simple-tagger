@@ -48,14 +48,7 @@ def get_arg_parser():
     return parser
 
 
-if __name__ == '__main__':
-    parser = get_arg_parser()
-    args = parser.parse_args()
-
-    source_dir = args.source_dir
-    album_file = args.album_file
-    track_file = args.track_file
-
+def collect_entries(source_dir: pl.Path):
     src_paths = list(source_dir.glob('*.flac'))
 
     entries = []
@@ -78,10 +71,20 @@ if __name__ == '__main__':
 
     assert len(expected_track_nums) == 0
 
-    def sort_key(entry):
-        return (entry.track_num, entry.path.name)
+    entries.sort(key=lambda e: e.track_num)
 
-    entries.sort(key=sort_key)
+    return entries
+
+
+if __name__ == '__main__':
+    parser = get_arg_parser()
+    args = parser.parse_args()
+
+    source_dir = args.source_dir
+    album_file = args.album_file
+    track_file = args.track_file
+
+    entries = collect_entries(source_dir)
 
     # Output intermediate data and pause for user input.
     # We care about artist and title info.
@@ -94,7 +97,7 @@ if __name__ == '__main__':
 
     input("Press Enter to continue...")
 
-    # Now actually load the album and track
+    # Now actually load the album and track data.
     with album_file.open() as fp:
         album_fields = hjson.load(fp)
 
