@@ -7,6 +7,11 @@ import hjson
 
 Block = tp.Mapping[str, tp.Sequence[str]]
 
+class Entry(tp.NamedTuple):
+    path: pl.Path
+    track_num: int
+    tags: tp.Mapping[str, tp.List[str]]
+
 class Processor:
     @staticmethod
     def process(
@@ -34,12 +39,6 @@ def get_arg_parser():
         type=pl.Path,
         help='Path to HJSON file defining track-level fields',
     )
-    parser.add_argument(
-        '--no-check-count',
-        action='store_true',
-        default=False,
-        help='Skip the check for equal numbers of input files and track blocks',
-    )
 
     return parser
 
@@ -58,15 +57,35 @@ if __name__ == '__main__':
     with track_file.open() as fp:
         track_field_blocks = hjson.load(fp)
 
-    flac_paths = sorted(source_dir.glob('*.flac'))
+    src_paths = list(source_dir.glob('*.flac'))
 
     # Check that there are equal numbers of track blocks and FLAC files.
-    if not args.no_check_count:
-        assert(len(track_field_blocks) == len(flac_paths))
+    assert(len(track_field_blocks) == len(src_paths))
 
-    for flac_path in flac_paths:
-        print(flac_path)
-        with flac_path.open(mode='rb') as fp:
+    entries = []
+    expected_track_nums = set(i + 1 for i in range(len(track_field_blocks)))
+
+    for src_path in src_paths:
+        with src_path.open(mode='rb') as fp:
             flac_data = mutagen.flac.FLAC(fp)
             tags = flac_data.tags
-            print(tags)
+
+            assert 'TRACKNUMBER' in tags
+            tn = tags['TRACKNUMBER']
+            assert isinstance(tn, list)
+            assert len(tn) == 1
+            track_num = int(tn[0])
+
+            expected_track_nums.remove(track_num)
+
+            entries.append(Entry(path=src_path, tags=tags, track_num=track_num))
+
+    assert len(expected_track_nums) == 0
+
+    def sort_key(entry):
+        return (entry.track_num, entry.path.name)
+
+    entries.sort(key=sort_key)
+
+    for entry in entries:
+        print(entry)
