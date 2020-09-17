@@ -15,6 +15,7 @@ class Entry(tp.NamedTuple):
     track_num: int
     tags: tp.Mapping[str, tp.List[str]]
 
+
 def get_arg_parser():
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument(
@@ -39,6 +40,7 @@ def get_arg_parser():
     )
 
     return parser
+
 
 def collect_entries(source_dir: pl.Path) -> tp.List[Entry]:
     src_paths = list(source_dir.glob('*.flac'))
@@ -67,6 +69,7 @@ def collect_entries(source_dir: pl.Path) -> tp.List[Entry]:
 
     return entries
 
+
 def normalize_block_candidate(block_candidate) -> Block:
     # Ensure that we have a mapping.
     if not isinstance(block_candidate, dict):
@@ -92,6 +95,30 @@ def normalize_block_candidate(block_candidate) -> Block:
 
     return block_candidate
 
+
+def load_album_block(path: pl.Path) -> Block:
+    with path.open() as fp:
+        album_block_candidate = hjson.load(fp)
+
+    album_block = normalize_block_candidate(album_block_candidate)
+
+    return album_block
+
+
+def load_track_blocks(path: pl.Path) -> tp.List[Block]:
+    with path.open() as fp:
+        track_block_candidates = hjson.load(fp)
+
+    assert isinstance(track_block_candidates, list)
+
+    for i in range(len(track_block_candidates)):
+        track_block_candidates[i] = normalize_block_candidate(track_block_candidates[i])
+
+    track_blocks = track_block_candidates
+
+    return track_blocks
+
+
 if __name__ == '__main__':
     parser = get_arg_parser()
     args = parser.parse_args()
@@ -113,8 +140,8 @@ if __name__ == '__main__':
 
     input("Press Enter to continue...")
 
-    with track_file.open() as fp:
-        track_field_blocks = hjson.load(fp)
+    album_block = load_album_block(album_file)
+    track_blocks = load_track_blocks(track_file)
 
     # Check that there are equal numbers of track blocks and FLAC files.
-    assert(len(track_field_blocks) == len(entries))
+    assert(len(track_blocks) == len(entries))
