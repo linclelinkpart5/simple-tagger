@@ -1,6 +1,8 @@
 import typing as tp
 import pathlib as pl
 import argparse
+import tempfile
+import shutil
 
 import mutagen.flac
 import hjson
@@ -23,11 +25,11 @@ def get_arg_parser():
         type=pl.Path,
         help='Input dir path to read FLAC files from',
     )
-    # parser.add_argument(
-    #     'output_dir',
-    #     type=pl.Path,
-    #     help='Output dir path to write modified FLAC files to',
-    # )
+    parser.add_argument(
+        'output_dir',
+        type=pl.Path,
+        help='Output dir path to write modified FLAC files to',
+    )
     parser.add_argument(
         'album_file',
         type=pl.Path,
@@ -128,6 +130,7 @@ def process_entries(
     entries: tp.Sequence[Entry],
     album_block: Block,
     track_blocks: tp.Sequence[Block],
+    output_dir: pl.Path,
 ):
     # Check that there are equal numbers of track blocks and entries.
     assert(len(track_blocks) == len(entries))
@@ -135,43 +138,59 @@ def process_entries(
     num_total_tracks = len(track_blocks)
     num_digits = len(str(num_total_tracks))
 
-    for entry, track_block in zip(entries, track_blocks):
-        flac_data = mutagen.flac.FLAC(entry.path)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        # Cast as a `Path`.
+        tmp_dir = pl.Path(tmp_dir)
 
-        # Remove all existing tags.
-        flac_data.tags.clear()
+        for entry, track_block in zip(entries, track_blocks):
+            flac_data = mutagen.flac.FLAC(entry.path)
 
-        # Remove any pictures.
-        flac_data.clear_pictures()
+            # Remove all existing tags.
+            flac_data.tags.clear()
 
-        # Add in album block fields.
-        flac_data.tags.update(album_block)
+            # Remove any pictures.
+            flac_data.clear_pictures()
 
-        # Add in the track block fields for this entry.
-        flac_data.tags.update(track_block)
+            # Add in album block fields.
+            flac_data.tags.update(album_block)
 
-        # Add track index/count info to tags.
-        flac_data.tags['tracknumber'] = [str(entry.track_num)]
-        flac_data.tags['totaltracks'] = [str(num_total_tracks)]
+            # Add in the track block fields for this entry.
+            flac_data.tags.update(track_block)
 
-        print(flac_data.pprint())
+            # Add track index/count info to tags.
+            flac_data.tags['tracknumber'] = [str(entry.track_num)]
+            flac_data.tags['totaltracks'] = [str(num_total_tracks)]
 
-        tno = str(entry.track_num).zfill(num_digits)
+            print(flac_data.pprint())
 
-        assert 'artist' in flac_data.tags
-        ars = ', '.join(flac_data.tags['artist'])
+            flac_data.save()
 
-        assert 'title' in flac_data.tags
-        assert len(flac_data.tags['title']) == 1
-        trk = flac_data.tags['title'][0]
+            # Create temporary interim file path.
+            tno = str(entry.track_num).zfill(num_digits)
 
-        ext = entry.path.suffix
+            assert 'artist' in flac_data.tags
+            ars = ', '.join(flac_data.tags['artist'])
 
-        # output_file_name = f'NEW {tno}. {ars} - {trk}.{ext}'
-        output_file_name = entry.path.name
-        output_path = entry.path.parent / output_file_name
+            assert 'title' in flac_data.tags
+            assert len(flac_data.tags['title']) == 1
+            trk = flac_data.tags['title'][0]
 
-        flac_data.save(output_path)
+            ext = entry.path.suffix
+
+            interim_file_name = f'{tno}. {ars} - {trk}{ext}'
+            interim_path = tmp_dir / interim_file_name
+
+            # Move file to temporary interim location.
+            shutil.move(str(entry.path), str(interim_path))
+
+        # Move all files in the interim directory to the output directory.
+        # Need to make a temporary copy of iterdir, since mutating FS state in
+        # the middle of the iteration causes race conditions.
+        interim_paths = list(tmp_dir.iterdir())
+        print(interim_paths)
+        for interim_path in interim_paths:
+            print(f'Moving {interim_path} to {output_dir}')
+            shutil.move(str(interim_path), str(output_dir))
 
 
 if __name__ == '__main__':
@@ -179,6 +198,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     source_dir = args.source_dir
+    output_dir = args.output_dir
     album_file = args.album_file
     track_file = args.track_file
     show_inter = args.intermediate
@@ -204,4 +224,5 @@ if __name__ == '__main__':
         entries=entries,
         album_block=album_block,
         track_blocks=track_blocks,
+        output_dir=output_dir,
     )
