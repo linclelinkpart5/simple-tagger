@@ -59,8 +59,8 @@ def collect_entries(source_dir: pl.Path) -> tp.List[Entry]:
 
         tags = flac_data.tags
 
-        assert 'TRACKNUMBER' in tags
-        tn = tags['TRACKNUMBER']
+        assert 'tracknumber' in tags
+        tn = tags['tracknumber']
         assert isinstance(tn, list)
         assert len(tn) == 1
         track_num = int(tn[0])
@@ -150,8 +150,8 @@ def process_entries(
         flac_data.tags.update(track_block)
 
         # Add track index/count info to tags.
-        flac_data.tags['TRACKNUMBER'] = [str(entry.track_num)]
-        flac_data.tags['TOTALTRACKS'] = [str(num_total_tracks)]
+        flac_data.tags['tracknumber'] = [str(entry.track_num)]
+        flac_data.tags['totaltracks'] = [str(num_total_tracks)]
 
         print(flac_data.pprint())
 
@@ -174,7 +174,7 @@ if __name__ == '__main__':
         # We care about artist and title info.
         intermediates = []
         for entry in entries:
-            sub_tags = {k: entry.tags[k] for k in ('ARTIST', 'TITLE')}
+            sub_tags = {k: entry.tags[k] for k in ('artist', 'title')}
             intermediates.append(sub_tags)
 
         print(hjson.dumps(intermediates))
