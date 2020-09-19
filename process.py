@@ -27,11 +27,6 @@ def get_arg_parser():
         help='Input dir path to read FLAC files from',
     )
     parser.add_argument(
-        'output_dir',
-        type=pl.Path,
-        help='Output dir path to write modified FLAC files to',
-    )
-    parser.add_argument(
         'album_file',
         type=pl.Path,
         help='Path to HJSON file defining album-level fields',
@@ -44,7 +39,14 @@ def get_arg_parser():
     parser.add_argument(
         '--intermediate',
         action='store_true',
-        help='Show intermediate information, e.g. artist/title from source files',
+        help='Show intermediate information, i.e. artist/title from source files',
+    )
+    parser.add_argument(
+        '--output_dir',
+        type=pl.Path,
+        default=None,
+        help='Output dir path to write modified FLAC files to '
+            '(defaults to the input directory)',
     )
 
     return parser
@@ -195,10 +197,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     source_dir = args.source_dir
-    output_dir = args.output_dir
     album_file = args.album_file
     track_file = args.track_file
     show_inter = args.intermediate
+
+    output_dir = args.output_dir
+    if not output_dir:
+        output_dir = source_dir
 
     entries = collect_entries(source_dir)
 
