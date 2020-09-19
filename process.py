@@ -133,6 +133,7 @@ def process_entries(
     assert(len(track_blocks) == len(entries))
 
     num_total_tracks = len(track_blocks)
+    num_digits = len(str(num_total_tracks))
 
     for entry, track_block in zip(entries, track_blocks):
         flac_data = mutagen.flac.FLAC(entry.path)
@@ -155,7 +156,22 @@ def process_entries(
 
         print(flac_data.pprint())
 
-        flac_data.save()
+        tno = str(entry.track_num).zfill(num_digits)
+
+        assert 'artist' in flac_data.tags
+        ars = ', '.join(flac_data.tags['artist'])
+
+        assert 'title' in flac_data.tags
+        assert len(flac_data.tags['title']) == 1
+        trk = flac_data.tags['title'][0]
+
+        ext = entry.path.suffix
+
+        # output_file_name = f'NEW {tno}. {ars} - {trk}.{ext}'
+        output_file_name = entry.path.name
+        output_path = entry.path.parent / output_file_name
+
+        flac_data.save(output_path)
 
 
 if __name__ == '__main__':
