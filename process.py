@@ -3,6 +3,7 @@ import pathlib as pl
 import argparse
 import tempfile
 import shutil
+import subprocess
 
 import mutagen.flac
 import hjson
@@ -183,14 +184,10 @@ def process_entries(
             # Move file to temporary interim location.
             shutil.move(str(entry.path), str(interim_path))
 
-        # Move all files in the interim directory to the output directory.
-        # Need to make a temporary copy of iterdir, since mutating FS state in
-        # the middle of the iteration causes race conditions.
-        interim_paths = list(tmp_dir.iterdir())
-        print(interim_paths)
-        for interim_path in interim_paths:
-            print(f'Moving {interim_path} to {output_dir}')
-            shutil.move(str(interim_path), str(output_dir))
+        # Run `bs1770gain`.
+        # This should also copy the files to their final destination.
+        args = ('bs1770gain', '--replaygain', '-irt', '--output', output_dir, tmp_dir)
+        subprocess.run(args, check=True)
 
 
 if __name__ == '__main__':
