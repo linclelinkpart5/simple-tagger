@@ -37,9 +37,9 @@ def get_arg_parser():
         help='Path to HJSON file defining track-level fields',
     )
     parser.add_argument(
-        '--intermediate',
+        '--no-intermediate',
         action='store_true',
-        help='Show intermediate information, i.e. artist/title from source files',
+        help='Do not show intermediate information, i.e. artist/title from source files',
     )
     parser.add_argument(
         '--output_dir',
@@ -199,7 +199,7 @@ if __name__ == '__main__':
     source_dir = args.source_dir
     album_file = args.album_file
     track_file = args.track_file
-    show_inter = args.intermediate
+    no_show_inter = args.no_intermediate
 
     output_dir = args.output_dir
     if not output_dir:
@@ -207,12 +207,31 @@ if __name__ == '__main__':
 
     entries = collect_entries(source_dir)
 
-    if show_inter:
+    if not no_show_inter:
         # Output intermediate data and pause for user input.
         # We care about artist and title info.
         intermediates = []
+        uninteresting_tags = (
+            'tracknumber',
+            'comment',
+            'totaltracks',
+            'year',
+            'date',
+            'albumartist',
+            'album',
+        )
+
         for entry in entries:
-            sub_tags = {k: entry.tags[k] for k in ('artist', 'title')}
+            sub_tags = dict()
+
+            for k in entry.tags.keys():
+                if k.lower() not in uninteresting_tags:
+                    sub_val = entry.tags[k]
+                    if isinstance(sub_val, list) and len(sub_val) == 1:
+                        sub_tags[k] = sub_val[0]
+                    else:
+                        sub_tags[k] = sub_val
+
             intermediates.append(sub_tags)
 
         print(hjson.dumps(intermediates))
